@@ -1,19 +1,36 @@
 import pandas as pd
 import datetime
+import os
+import sys
 import tkinter as tk
 from tkinter import filedialog
 
 def convert_date_to_unix(date_str):
-    """Converts a date string in the format 'YYYY-MM-DD HH:MM:SS' to a Unix timestamp."""
+    """
+    Converts a date string in the format 'YYYY-MM-DD HH:MM:SS' to a Unix timestamp.
+    
+    Parameters:
+    date_str (str): The date string to convert.
+    
+    Returns:
+    int: The Unix timestamp in milliseconds.
+    """
     dt = datetime.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
     unix_timestamp = int(dt.timestamp()) * 1000  # Convert to milliseconds
     return unix_timestamp
 
 def binance_to_pine_script(csv_file_path):
-    # Read the CSV file
+    """
+    Reads a Binance trade history CSV file and converts it into a PINE script format.
+    
+    Parameters:
+    csv_file_path (str): Path to the Binance CSV file.
+    
+    Returns:
+    str: The generated PINE script as a string.
+    """
     data = pd.read_csv(csv_file_path)
 
-    # Start of the PINE script
     pine_script = [
         "// Auto-generated PINE Script",
         "// Conversion of Binance Trade History",
@@ -22,33 +39,38 @@ def binance_to_pine_script(csv_file_path):
         ""
     ]
 
-    # Iterate over each row and create PINE script lines
     for index, row in data.iterrows():
-        # Convert date to Unix timestamp
         timestamp = convert_date_to_unix(row['Date(UTC)'])
-
-        # Determine the operation type (buy or sell)
         operation = 1 if row['Side'] == 'BUY' else 0
-
-        # Create the strategy order and close lines
         order_line = f"strategy.order(\"{index}\", {operation}, {row['Quantity']}, {row['Price']}, when = time_close == {timestamp})"
-        close_line = f"strategy.close(\"{index}\", when = time_close == {timestamp + 10000})"  # Placeholder for close time
-
-        # Add lines to the script
+        close_line = f"strategy.close(\"{index}\", when = time_close == {timestamp + 10000})"
         pine_script.append(order_line)
         pine_script.append(close_line)
         pine_script.append("")
 
     return "\n".join(pine_script)
 
-# GUI for file selection
-root = tk.Tk()
-root.withdraw()  # Hides the small tkinter window
+def main():
+    """
+    Main function to execute the script.
+    """
+    if sys.platform.startswith('darwin') or sys.platform.startswith('win'):
+        root = tk.Tk()
+        root.withdraw()
+        file_path = filedialog.askopenfilename(title="Select Binance Export CSV File", filetypes=[("CSV files", "*.csv")])
+    else:
+        file_path = input("Enter the path to your Binance export CSV file: ")
 
-# Open file dialog and get the file path
-file_path = filedialog.askopenfilename(title="Select Binance Export CSV File", filetypes=[("CSV files", "*.csv")])
-if file_path:
-    pine_script_content = binance_to_pine_script(file_path)
-    print(pine_script_content)  # Or save this content to a file as needed
-else:
-    print("No file selected.")
+    if file_path:
+        pine_script_content = binance_to_pine_script(file_path)
+        output_file_path = os.path.splitext(file_path)[0] + "_PINEScript.txt"
+        
+        with open(output_file_path, 'w') as file:
+            file.write(pine_script_content)
+
+        print(f"PINE script saved to {output_file_path}")
+    else:
+        print("No file selected or provided.")
+
+if __name__ == "__main__":
+    main()
