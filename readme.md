@@ -16,6 +16,8 @@ This Python script converts Binance trade history, exported as a CSV file, into 
 ## Usage
 Run the script using Python. On macOS and Windows, a file dialog will appear for selecting the CSV file. On other operating systems, you'll be prompted to enter the file path in the console.
 
+Ensure the CSV file contains only 1 symbol before running the script. Also it's design for FUTURES TRADES export.
+
 ## Installation
 1. Clone the repo, and cd into the directory
 2. Create virtual environment
